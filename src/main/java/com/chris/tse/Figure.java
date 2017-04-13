@@ -7,11 +7,13 @@ public class Figure {
     private String name;
     private FigureSize size;
     private String price;
+    private boolean pub;
 
-    public Figure (String name, FigureSize size, String price) {
+    public Figure (String name, FigureSize size, String price, boolean pub) {
         this.name = name;
         this.size = size;
         this.price = price;
+        this.pub = pub;
     }
 
     public String getName() { return name; }
@@ -20,9 +22,9 @@ public class Figure {
         return size.toString();
     }
 
-    public String getPrice() {
-        return price;
-    }
+    public String getPrice() { return price; }
+
+    public boolean isPub() { return pub; }
 
     public void setName(String name) { this.name = name; }
 
