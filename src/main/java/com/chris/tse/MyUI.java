@@ -10,6 +10,7 @@ import com.vaadin.data.provider.ConfigurableFilterDataProvider;
 import com.vaadin.server.Page;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.*;
 import com.vaadin.ui.components.grid.HeaderCell;
 import com.vaadin.ui.components.grid.HeaderRow;
@@ -30,6 +31,7 @@ import java.util.List;
 public class MyUI extends UI {
 
     public static ArrayList<Figure> db = new ArrayList<>();
+    public static int itemID = 0;
 
     @Override
     protected void init(VaadinRequest vaadinRequest) {
@@ -52,9 +54,9 @@ public class MyUI extends UI {
         mainMenu.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
 
-        final Label title = new Label("Welcome!");
+        final Label title = new Label("<h1 style='font-size:50px;margin-bottom:10px'>Welcome!</h1>");
+        title.setContentMode(ContentMode.HTML);
         title.setWidth(null);
-        title.setPrimaryStyleName("main-title");
 
         final Button goCatalog = new Button("See Full Catalog");
         final Button goSearch = new Button("Search Catalog");
@@ -77,12 +79,15 @@ public class MyUI extends UI {
         addForm.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
         addForm.setWidth(null);
 
+        Label addLabel = new Label("<h2 style='font-size:30px;margin-bottom:10px'>Add an Item</h2>");
+        addLabel.setContentMode(ContentMode.HTML);
+
         TextField name = new TextField("Figure Name");
         name.setRequiredIndicatorVisible(true);
 
 
-        TextField price = new TextField("Price (¥)");
-        price.setRequiredIndicatorVisible(true);
+        TextField manufacturer = new TextField("Manufacturer");
+        manufacturer.setRequiredIndicatorVisible(true);
 
 
         ComboBox<String> size = new ComboBox<>("Select a size");
@@ -100,25 +105,25 @@ public class MyUI extends UI {
 
         add.addClickListener( e -> {
             String itemName = name.getValue();
-            String itemPrice = price.getValue();
+            String itemMan = manufacturer.getValue();
             FigureSize itemSize = FigureSize.valueOf(size.getValue().toUpperCase());
             boolean p = (priv.getValue().equals("Public") ? true : false);
 
             System.out.println("The item is called: " + itemName);
             System.out.println("The size is: " + itemSize);
-            System.out.println("The price is: " + itemPrice);
+            System.out.println("The manufacturer is: " + itemMan);
             if (p) {
-                db.add(new Figure(itemName, itemSize, itemPrice));
+                db.add(new Figure(itemName, itemSize, itemMan, p));
             } else {
-                pdb.add(new Figure(itemName, itemSize, itemPrice));
+                pdb.add(new Figure(itemName, itemSize, itemMan, p));
             }
-            new Notification ("Item added", "" + itemName + " with price of " + itemPrice + " of size " + size.getValue(), Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent());
+            new Notification ("Item added", "" + itemName + " made by " + itemMan + " of size " + size.getValue(), Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent());
         });
 
         back.addClickListener( e -> setContent(mainMenuHolder));
 
 
-        addForm.addComponents(name, price, size, priv, add);
+        addForm.addComponents(addLabel, name, manufacturer, size, priv, add);
         addFormHolder.addComponent(addForm);
 
 
@@ -143,16 +148,13 @@ public class MyUI extends UI {
         figures.setWidth("1000px");
 
 
-        final ArrayList<Figure> total = new ArrayList<Figure>(db);
+        final ArrayList<Figure> total = new ArrayList<>(db);
         total.addAll(pdb);
         figures.setItems(total);
 
-        //Grid.Column<Figure, String> nameColumn = figures.addColumn(Figure::getName).setCaption("Name");
-
-
         TextField nameEditor = new TextField();
         ComboBox<String> sizeEditor = new ComboBox<>();
-        TextField priceEditor = new TextField();
+        TextField manEditor = new TextField();
 
         sizeEditor.setItems(sizes);
 
@@ -164,25 +166,30 @@ public class MyUI extends UI {
         Binding<Figure, String> sizeBinding = binder.bind(
                 sizeEditor, Figure::getSize, Figure::setSize);
 
-        Binding<Figure, String> priceBinding = binder.bind(
-                priceEditor, Figure::getPrice, Figure::setPrice);
+        Binding<Figure, String> manBinding = binder.bind(
+                manEditor, Figure::getManufacturer, Figure::setManufacturer);
 
         figures.addColumn(Figure::getName).setEditorComponent(
                 nameEditor, Figure::setName).setExpandRatio(1).setCaption("Name").setWidth(400).setEditorBinding(nameBinding);
 
-        figures.addColumn(Figure::getPrice).setEditorComponent(
-                priceEditor, Figure::setPrice).setExpandRatio(1).setCaption("Price (¥)").setWidth(200).setEditorBinding(priceBinding);
+        figures.addColumn(Figure::getManufacturer).setEditorComponent(
+                manEditor, Figure::setManufacturer).setExpandRatio(1).setCaption("Manufacturer").setWidth(200).setEditorBinding(manBinding);
 
         figures.addColumn(Figure::getSize).setEditorComponent(
                 sizeEditor, Figure::setSize).setExpandRatio(1).setCaption("Size").setWidth(200).setEditorBinding(sizeBinding);
 
         figures.addColumn(fig -> "Delete",
                 new ButtonRenderer<>(clickEvent -> {
-                    total.remove(clickEvent.getItem());
+                    if (clickEvent.getItem().isPub()) {
+                        db.remove(clickEvent.getItem());
+                    } else {
+                        pdb.remove(clickEvent.getItem());
+                    }
+                    total.clear();
+                    total.addAll(db);
+                    total.addAll(pdb);
                     figures.setItems(total);
                 })).setWidth(200);
-
-
 
 
         TextField filterField = new TextField();
@@ -197,22 +204,22 @@ public class MyUI extends UI {
         // Search Form
         // **************************
         final VerticalLayout searchFormHolder = new VerticalLayout();
-        addFormHolder.setHeight("100%");
-        addFormHolder.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
+        searchFormHolder.setHeight("100%");
+        searchFormHolder.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
         final FormLayout searchForm = new FormLayout();
-        addForm.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
-        addForm.setWidth(null);
+        searchForm.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
+        searchForm.setWidth(null);
+
+        Label searchLabel = new Label("<h2 style='font-size:30px;margin-bottom:10px'>Search Catalog</h2>");
+        searchLabel.setContentMode(ContentMode.HTML);
 
         TextField searchName = new TextField("Name");
         searchName.setRequiredIndicatorVisible(false);
 
 
-        ComboBox<String> searchPrice = new ComboBox("Price Range (¥)");
-        List<String> searchPrices = Arrays.asList("Any", "0 - 2999", "3000 - 7999", "8000 - 19999", "20000 - 99999");
-        searchPrice.setItems(searchPrices);
-        searchPrice.setRequiredIndicatorVisible(false);
-        searchPrice.setSelectedItem("Any");
+        TextField searchMan = new TextField("Manufacturer");
+        searchName.setRequiredIndicatorVisible(false);
 
 
         ComboBox<String> searchSize = new ComboBox<>("Select a size");
@@ -229,7 +236,7 @@ public class MyUI extends UI {
 
         Button searchBtn = new Button("Search");
 
-        searchForm.addComponents(searchName, searchPrice, searchSize, searchPriv, searchBtn);
+        searchForm.addComponents(searchLabel, searchName, searchMan, searchSize, searchPriv, searchBtn);
         searchFormHolder.addComponent(searchForm);
 
 
@@ -264,9 +271,9 @@ public class MyUI extends UI {
         });
 
         addSample.addClickListener( e -> {
-            db.add(new Figure("Sample Item 1", FigureSize.MEDIUM, "4999"));
-            db.add(new Figure("Sample Item 2", FigureSize.LARGE, "2549"));
-            db.add(new Figure("Sample Item 3", FigureSize.SMALL, "8999"));
+            db.add(new Figure("Sample Item 1", FigureSize.MEDIUM, "Good Smile Company", true));
+            db.add(new Figure("Sample Item 2", FigureSize.LARGE, "Banpresto", true));
+            db.add(new Figure("Sample Item 3", FigureSize.SMALL, "Kotobukiya", true));
         });
 
         searchBtn.addClickListener( e -> {
@@ -278,13 +285,11 @@ public class MyUI extends UI {
 
 
             String nameParam = searchName.getValue();
-            String priceParam = searchPrice.getValue();
+            String manParam = searchMan.getValue();
             String sizeParam = searchSize.getValue();
             String pubParam = searchPriv.getValue();
-
-
-            int fsize = total.size();
             res.addAll(total);
+            int fsize = res.size();
 
             if (pubParam.equals("Public")) {
                 res.clear();
@@ -303,7 +308,7 @@ public class MyUI extends UI {
                     String currSize = res.get(i).getSize().toUpperCase();
                     if (!currSize.equals(sizeParam.toUpperCase())) {
                         res.remove(i);
-                        i = 0;
+                        i = -1;
                         fsize = res.size();
                     }
                 }
@@ -311,23 +316,21 @@ public class MyUI extends UI {
 
             if (!nameParam.isEmpty()) {
                 for (int i = 0; i < fsize; i++) {
-                    if (!res.get(i).getName().contains(nameParam)) {
+                    String currName = res.get(i).getName().toLowerCase();
+                    if (!currName.contains(nameParam.toLowerCase())) {
                         res.remove(i);
-                        i = 0;
+                        i = -1;
                         fsize = res.size();
                     }
                 }
             }
 
-            if (!priceParam.equals("Any")) {
-                String[] priceParams = searchPrice.getValue().split(" - ");
-                int low = Integer.parseInt(priceParams[0]);
-                int high = Integer.parseInt(priceParams[1]);
+            if (!manParam.isEmpty()) {
                 for (int i = 0; i < fsize; i++) {
-                    int currPrice = Integer.parseInt(res.get(i).getPrice());
-                    if (!(low <= currPrice && currPrice <= high)) {
+                    String currMan = res.get(i).getManufacturer().toLowerCase();
+                    if (!currMan.contains(manParam.toLowerCase())) {
                         res.remove(i);
-                        i = 0;
+                        i = -1;
                         fsize = res.size();
                     }
                 }

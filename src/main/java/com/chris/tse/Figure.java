@@ -6,13 +6,13 @@ package com.chris.tse;
 public class Figure {
     private String name;
     private FigureSize size;
-    private String price;
+    private String manufacturer;
     private boolean pub;
 
-    public Figure (String name, FigureSize size, String price, boolean pub) {
+    public Figure (String name, FigureSize size, String manufacturer, boolean pub) {
         this.name = name;
         this.size = size;
-        this.price = price;
+        this.manufacturer = manufacturer;
         this.pub = pub;
     }
 
@@ -22,13 +22,13 @@ public class Figure {
         return size.toString();
     }
 
-    public String getPrice() { return price; }
+    public String getManufacturer() { return manufacturer; }
 
     public boolean isPub() { return pub; }
 
     public void setName(String name) { this.name = name; }
 
-    public void setPrice(String price) { this.price = price; }
+    public void setManufacturer(String man) { this.manufacturer = man; }
 
     public void setSize(String size) { this.size = FigureSize.valueOf(size.toUpperCase()); }
 }
